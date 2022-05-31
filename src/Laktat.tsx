@@ -38,12 +38,13 @@ const Laktat: FC = (): ReactElement =>  {
         setBruker(user.displayName);
         console.log(credential);
         console.log(user);
+        console.log(token);
       }
       
 
     useEffect(() => {
         console.log('brukeren ' + auth.currentUser?.displayName);
-    }, [bruker, auth.currentUser?.displayName])
+    }, [bruker])
     // useEffect(() => {
         const fetchData = async () => {
             // await googleSignIn();
