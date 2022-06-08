@@ -1,7 +1,7 @@
-import { FC, ReactElement, useState } from "react";
-import {  db, auth, provider } from "./firebaseSetup"
-import { addDoc, collection, getDocs } from "firebase/firestore"; 
-import { signInWithPopup } from "firebase/auth";
+import { FC, ReactElement, useEffect, useState } from "react";
+import { db, auth, provider } from "./firebaseSetup"
+import { addDoc, collection, getDocs } from "firebase/firestore";
+import { signInWithRedirect } from "firebase/auth";
 import LaktatChart from "./Components/LaktatChart";
 import { Data, Fart, Maling, Puls } from "./Models/maling";
 import styled from 'styled-components';
@@ -30,24 +30,34 @@ const Laktat: FC = (): ReactElement =>  {
     const [bruker, setBruker] = useState<string | null | undefined>(auth.currentUser?.uid);
     const [malinger, setMalinger] = useState<Maling[]>([]);
 
+    useEffect(() => {
+        checkAuthState();
+    }, []);
+
+    const checkAuthState = () => {
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                setBruker(user.uid)
+            } else {
+                setBruker(null);
+            }
+        })
+    }
+
     const googleSignIn = async () => {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        setBruker(user.uid);
-      }
-    
+        await signInWithRedirect(auth, provider);
+    }
+
     const fetchData = async () => {
-        if (bruker)
-        {
+        if (bruker) {
             const data = await getDocs(collection(db, "laktat", bruker, "malinger"));
-   
+
             let malingList: Maling[] = [];
 
             data.forEach((doc) => {
                 let laktat = doc.data();
                 let maling = new Maling();
                 maling.id = doc.id;
-                
 
                 laktat.data.forEach((l: any) => {
                     
@@ -75,8 +85,8 @@ const Laktat: FC = (): ReactElement =>  {
 
             setMalinger(malingList);
         }
-        
-    } 
+
+    }
 
     const oppdater = async () => {
         malinger.forEach(m => {
@@ -94,22 +104,22 @@ const Laktat: FC = (): ReactElement =>  {
 
     const setData = async () => {
         if (bruker) {
-            await addDoc(collection(db, "laktat", bruker, "malinger"), 
-            {
-                data: [
-                    {
-                        fart: 13,
-                        puls: 140,
-                        verdi: 5.3,
-                    },
-                    {
-                        fart: 14,
-                        puls: 150,
-                        verdi: 6.3,
-                    }
+            await addDoc(collection(db, "laktat", bruker, "malinger"),
+                {
+                    data: [
+                        {
+                            fart: 13,
+                            puls: 140,
+                            verdi: 5.3,
+                        },
+                        {
+                            fart: 14,
+                            puls: 150,
+                            verdi: 6.3,
+                        }
 
-                ]
-            });
+                    ]
+                });
         }
     }
     
