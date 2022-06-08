@@ -5,14 +5,6 @@ import { signInWithPopup } from "firebase/auth";
 import LaktatChart from "./Components/LaktatChart";
 import { Fart, Maling, Puls } from "./Models/maling";
 import styled from 'styled-components';
-
-const dataPuls = [
-    { puls: '140', laktat: 1.4 },
-    { puls: '150', laktat: 3.1 },
-    { puls: '161', laktat: 3.5 },
-    { puls: '170', laktat: 7.1 },
-  ];
-
   
 const Container = styled.div`
     display: flex;
