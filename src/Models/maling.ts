@@ -3,6 +3,7 @@ export class Maling {
   id: string = '';
   pulsDataMalinger: Puls[] = [];
   fartDataMalinger: Fart[] = [];
+  malinger: Data[] = [];
 
 }
 
@@ -12,6 +13,12 @@ export class Puls{
 }
 
 export class Fart{
+    fart: string = '';
+    laktat: number = 0;
+}
+
+export class Data{
+    puls: string = '';
     fart: string = '';
     laktat: number = 0;
 }

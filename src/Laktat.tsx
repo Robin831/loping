@@ -3,8 +3,9 @@ import {  db, auth, provider } from "./firebaseSetup"
 import { addDoc, collection, getDocs } from "firebase/firestore"; 
 import { signInWithPopup } from "firebase/auth";
 import LaktatChart from "./Components/LaktatChart";
-import { Fart, Maling, Puls } from "./Models/maling";
+import { Data, Fart, Maling, Puls } from "./Models/maling";
 import styled from 'styled-components';
+import { Button } from "react-bootstrap";
   
 const Container = styled.div`
     display: flex;
@@ -12,9 +13,21 @@ const Container = styled.div`
     align-content: center;
 `;
 
+const DataContainer = styled.div`
+    display: flex;
+    flex-flow: column wrap;
+    row-gap: 10px;
+    column-gap: 2em;
+`;
+
+const HeaderWrapper = styled.div`
+    display: grid;
+    grid-template-columns: 200px 200px 200px;
+    column-gap: 10px;
+`;
+
 const Laktat: FC = (): ReactElement =>  {
     const [bruker, setBruker] = useState<string | null | undefined>(auth.currentUser?.uid);
-    const [lineData, setLineData] = useState<any[]>([]);
     const [malinger, setMalinger] = useState<Maling[]>([]);
 
     const googleSignIn = async () => {
@@ -36,39 +49,48 @@ const Laktat: FC = (): ReactElement =>  {
                 maling.id = doc.id;
                 
 
-                let d: any[] = [];                
-
                 laktat.data.forEach((l: any) => {
-                    let data = {
-                        fart: l.fart,
-                        laktat: l.verdi
-                    }
-                    d.push(data);
                     
                     let puls = new Puls();
                     let fart = new Fart();
+                    let d = new Data();
 
                     puls.laktat = l.verdi;
                     fart.laktat = l.verdi;
                     puls.puls = l.puls;
                     fart.fart = l.fart;
+                    d.laktat = l.verdi;
+                    d.fart = l.fart;
+                    d.puls = l.puls;
+
 
                     maling.pulsDataMalinger.push(puls);
                     maling.fartDataMalinger.push(fart);                    
+                    maling.malinger.push(d);                    
                 });
 
                 malingList.push(maling);
 
-                if (lineData.length === 0) {
-                    setLineData(d);
-
-                }
             });
 
             setMalinger(malingList);
         }
         
     } 
+
+    const oppdater = async () => {
+        malinger.forEach(m => {
+            // const malingRef = doc(db, 'malinger', m.id);
+            const malingData = malinger.find(x => x.id === m.id);
+    
+            if (malingData) {
+                console.log(malingData.malinger);
+                // await setDoc(malingRef, malingData.malinger)
+            }
+    })
+        
+
+    }
 
     const setData = async () => {
         if (bruker) {
@@ -89,19 +111,18 @@ const Laktat: FC = (): ReactElement =>  {
                 ]
             });
         }
-    } 
-
-  
+    }
+    
     return (
         <header className="App-header">
         {!bruker && 
-            <button onClick={googleSignIn}>Sign in with Google</button>
+            <Button variant="primary" onClick={googleSignIn}>Sign in with Google</Button>
         }
         {bruker && 
             <>
             <p>Terskel</p>
-            <button onClick={fetchData}>Hent data</button>
-            <button onClick={setData}>Sett data</button>
+            <Button variant="primary" onClick={fetchData}>Hent data</Button>
+            <Button variant="primary" onClick={setData}>Sett data</Button>
             <Container>
                     {malinger.length > 0 && malinger.map( ma => (
                         <LaktatChart 
@@ -126,6 +147,31 @@ const Laktat: FC = (): ReactElement =>  {
                     />
                     ))}
             </Container>
+            <h3>Data</h3>
+            <DataContainer>
+                {malinger.length > 0 && malinger.map( ma => (
+                    <>
+                        <h4>{ma.id}</h4>
+                            <HeaderWrapper>
+                                <h6>Fart</h6>
+                                <h6>Puls</h6>
+                                <h6>Laktat</h6>
+                            </HeaderWrapper>
+                        <HeaderWrapper>
+                            {ma.malinger.map( f => (
+                                <>
+                                    <input type="number" value={f.fart} />
+                                    <input type="number" value={f.puls} />
+                                    <input type="number" value={f.laktat} />
+                                </>
+                            ))}
+                            
+                        </HeaderWrapper>
+                    </>
+                ))}
+            </DataContainer>
+            <Button variant="primary" onClick={oppdater}>Oppdater</Button>
+
             </>
         }
         </header>
