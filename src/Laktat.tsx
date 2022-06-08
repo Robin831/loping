@@ -1,8 +1,10 @@
-import { FC, ReactElement, useEffect, useState } from "react";
-import { LineChart, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, Line, LabelList } from "recharts";
+import { FC, ReactElement, useState } from "react";
 import {  db, auth, provider } from "./firebaseSetup"
 import { addDoc, collection, getDocs } from "firebase/firestore"; 
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { signInWithPopup } from "firebase/auth";
+import LaktatChart from "./Components/LaktatChart";
+import { Fart, Maling, Puls } from "./Models/maling";
+import styled from 'styled-components';
 
 const dataPuls = [
     { puls: '140', laktat: 1.4 },
@@ -11,41 +13,39 @@ const dataPuls = [
     { puls: '170', laktat: 7.1 },
   ];
 
-const opacity = 1;  
   
+const Container = styled.div`
+    display: flex;
+    justify-content: center;
+    align-content: center;
+`;
+
 const Laktat: FC = (): ReactElement =>  {
     const [bruker, setBruker] = useState<string | null | undefined>(auth.currentUser?.uid);
     const [lineData, setLineData] = useState<any[]>([]);
-    const [malinger, setMalinger] = useState<string[]>([]);
+    const [malinger, setMalinger] = useState<Maling[]>([]);
 
     const googleSignIn = async () => {
         const result = await signInWithPopup(auth, provider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        const token = credential?.accessToken;
         const user = result.user;
         setBruker(user.uid);
-        console.log(credential);
-        console.log(user);
-        console.log(token);
       }
-      
-
-    useEffect(() => {
-        console.log('brukeren ' + auth.currentUser?.displayName);
-    }, [bruker])
     
     const fetchData = async () => {
         if (bruker)
         {
             const data = await getDocs(collection(db, "laktat", bruker, "malinger"));
    
-            let m: string[] = [];
+            let malingList: Maling[] = [];
 
             data.forEach((doc) => {
                 let laktat = doc.data();
-                m.push(doc.id);
+                let maling = new Maling();
+                maling.id = doc.id;
+                
 
-                let d: any[] = [];
+                let d: any[] = [];                
+
                 laktat.data.forEach((l: any) => {
                     let data = {
                         fart: l.fart,
@@ -53,7 +53,19 @@ const Laktat: FC = (): ReactElement =>  {
                     }
                     d.push(data);
                     
+                    let puls = new Puls();
+                    let fart = new Fart();
+
+                    puls.laktat = l.verdi;
+                    fart.laktat = l.verdi;
+                    puls.puls = l.puls;
+                    fart.fart = l.fart;
+
+                    maling.pulsDataMalinger.push(puls);
+                    maling.fartDataMalinger.push(fart);                    
                 });
+
+                malingList.push(maling);
 
                 if (lineData.length === 0) {
                     setLineData(d);
@@ -61,7 +73,7 @@ const Laktat: FC = (): ReactElement =>  {
                 }
             });
 
-            setMalinger(m);
+            setMalinger(malingList);
         }
         
     } 
@@ -98,59 +110,30 @@ const Laktat: FC = (): ReactElement =>  {
             <p>Terskel</p>
             <button onClick={fetchData}>Hent data</button>
             <button onClick={setData}>Sett data</button>
-            <div>
-                <ul>
+            <Container>
                     {malinger.length > 0 && malinger.map( ma => (
-                        <li>{ma}</li>
+                        <LaktatChart 
+                        data={ma.fartDataMalinger} 
+                        syncId={ma.id}
+                        xKey="fart"
+                        lineKey="laktat"
+                        xDomain={[11, 15]}
+                        yDomain={[1, 8]}
+                    />
                     ))}
-                </ul>
-            </div>
-            <div>
-                <p>Laktat over km/t</p>
-                <div className="line-chart-wrapper">
-                    {lineData.length > 0 &&  
-                    <LineChart width={700} height={400} data={lineData} syncId="test">
-                        <CartesianGrid stroke="#f5f5f5" fill="#e6e6e6" />
-                        <XAxis type="number" dataKey="fart" height={40} startOffset="4" tickCount={8} domain={[11, 15]} />
-                        <YAxis type="number" width={80} domain={[1, 8]} />
-                        <Tooltip />
-                        <ReferenceLine y={4} stroke="green" />
-                        <Line
-                            key="uv"
-                            type="monotone"
-                            dataKey="laktat"
-                            stroke="#ff7300"
-                            strokeOpacity={opacity}
-                            strokeDasharray="3 3"
-                        >
-                            <LabelList position="bottom" offset={10} dataKey="laktat" />
-                        </Line>
-                    </LineChart>
-                    }
-                </div>
-            </div>
-            <div>
-                <p>Laktat over puls</p>
-                <div className="line-chart-wrapper">
-                    <LineChart width={700} height={400} data={dataPuls} syncId="test">
-                        <CartesianGrid stroke="#f5f5f5" fill="#e6e6e6" />
-                        <XAxis type="number" dataKey="puls" height={40} tickCount={12} domain={[130, 190]} />
-                        <YAxis type="number" width={80} domain={[1, 8]} />
-                        <Tooltip />
-                        <ReferenceLine y={4} stroke="green" />
-                        <Line
-                            key="uv"
-                            type="monotone"
-                            dataKey="laktat"
-                            stroke="#ff7300"
-                            strokeOpacity={opacity}
-                            strokeDasharray="3 3"
-                        >
-                            <LabelList position="bottom" offset={10} dataKey="laktat" />
-                        </Line>
-                    </LineChart>
-                </div>
-            </div>
+            </Container>
+            <Container>
+                    {malinger.length > 0 && malinger.map( ma => (
+                        <LaktatChart 
+                        data={ma.pulsDataMalinger} 
+                        syncId={ma.id + 'puls'}
+                        xKey="puls"
+                        lineKey="laktat"
+                        xDomain={[130, 190]}
+                        yDomain={[1, 8]}
+                    />
+                    ))}
+            </Container>
             </>
         }
         </header>
