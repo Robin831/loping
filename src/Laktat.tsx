@@ -1,178 +1,156 @@
-import { FC, ReactElement, useEffect, useState } from "react";
-import { db, auth, provider } from "./firebaseSetup"
-import { addDoc, collection, getDocs } from "firebase/firestore";
-import { signInWithRedirect } from "firebase/auth";
-import LaktatChart from "./Components/LaktatChart";
-import { Data, Fart, Maling, Puls } from "./Models/maling";
-import styled from 'styled-components';
-import { Button } from "react-bootstrap";
+import { ChangeEvent, FC, ReactElement, useState } from "react";
+import { LaktatType, Measurement } from "./Models/maling";
+import { Button, Table } from "react-bootstrap";
 import { useAppStore } from "./context/AppContext";
-
-const Container = styled.div`
-    display: flex;
-    justify-content: center;
-    align-content: center;
-`;
-
-const DataContainer = styled.div`
-    display: flex;
-    flex-flow: column wrap;
-    row-gap: 10px;
-    column-gap: 2em;
-`;
-
-const HeaderWrapper = styled.div`
-    display: grid;
-    grid-template-columns: 200px 200px 200px;
-    column-gap: 10px;
-`;
+import useGetLaktat from "./api/useGetLaktat";
+import LaktatOverviewComponent from "./Components/laktat-overview/LaktatOverview";
+import { MeasurementHeader, Wrapper } from "./Laktat.style";
+import { prettifyDate } from "./utils/DateUtils";
+import { DatePicker } from "antd";
+import moment from "moment";
 
 const Laktat: FC = (): ReactElement => {
-    const { user } = useAppStore();
-    const [bruker, setBruker] = useState<string | null | undefined>(auth.currentUser?.uid);
-    const [malinger, setMalinger] = useState<Maling[]>([]);
+    const { measurements, setMeasurements } = useAppStore();
+    const [selectedMeasurement, setSelectedMeasurement] = useState<Measurement>();
+    const [newLaktat, setNewLaktat] = useState<LaktatType>({ laktat: 0, puls: 0, fart: 0 });
+    const { updateMeasurement, addMeasurement, removeMeasurement } = useGetLaktat();
 
-    useEffect(() => {
-        if (!user) return;
+    const onInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const value = +event.target.value;
+        const name = event.target.name;
+        let laktat = { ...newLaktat };
 
-        fetchData();
-    }, [user])
+        if (name === 'laktat') laktat.laktat = value;
+        if (name === 'fart') laktat.fart = value;
+        if (name === 'puls') laktat.puls = value;
 
-
-    const fetchData = async () => {
-        if (bruker) {
-            const data = await getDocs(collection(db, "laktat", bruker, "malinger"));
-
-            let malingList: Maling[] = [];
-
-            data.forEach((doc) => {
-                let laktat = doc.data();
-                let maling = new Maling();
-                maling.id = doc.id;
-
-                laktat.data.forEach((l: any) => {
-
-                    let puls = new Puls();
-                    let fart = new Fart();
-                    let d = new Data();
-
-                    puls.laktat = l.verdi;
-                    fart.laktat = l.verdi;
-                    puls.puls = l.puls;
-                    fart.fart = l.fart;
-                    d.laktat = l.verdi;
-                    d.fart = l.fart;
-                    d.puls = l.puls;
-
-
-                    maling.pulsDataMalinger.push(puls);
-                    maling.fartDataMalinger.push(fart);
-                    maling.malinger.push(d);
-                });
-
-                malingList.push(maling);
-
-            });
-
-            setMalinger(malingList);
-        }
-
+        setNewLaktat({ ...laktat });
     }
 
-    const oppdater = async () => {
-        malinger.forEach(m => {
-            // const malingRef = doc(db, 'malinger', m.id);
-            const malingData = malinger.find(x => x.id === m.id);
+    const onDateChange = (date: moment.Moment | null, dateString: string) => {
+        if (date && selectedMeasurement) {
+            selectedMeasurement.date = date.toDate();
+            setSelectedMeasurement({ ...selectedMeasurement });
+        }
+    };
 
-            if (malingData) {
-                console.log(malingData.malinger);
-                // await setDoc(malingRef, malingData.malinger)
-            }
-        })
-
-
+    const onNewMeasurementClick = () => {
+        const measurement: Measurement = {
+            date: moment().toDate(),
+            laktater: []
+        }
+        setSelectedMeasurement({ ...measurement });
     }
 
-    const setData = async () => {
-        if (bruker) {
-            await addDoc(collection(db, "laktat", bruker, "malinger"),
-                {
-                    data: [
-                        {
-                            fart: 13,
-                            puls: 140,
-                            verdi: 5.3,
-                        },
-                        {
-                            fart: 14,
-                            puls: 150,
-                            verdi: 6.3,
-                        }
+    const onAddMeasurementClick = async (measurement: Measurement) => {
+        measurement.laktater.push(newLaktat);
+        const updatedMeasurement = await addMeasurement(measurement);
 
-                    ]
-                });
+        if (updatedMeasurement) {
+            setSelectedMeasurement({ ...updatedMeasurement });
         }
+    }
+
+    const onAddLaktatClick = (laktat: LaktatType) => {
+        if (!selectedMeasurement) return;
+        selectedMeasurement.laktater.push(laktat);
+        setSelectedMeasurement({ ...selectedMeasurement })
+        updateMeasurement(selectedMeasurement);
+    }
+
+    const onRemoveLaktatClick = (index: number) => {
+        if (!selectedMeasurement) return;
+        selectedMeasurement.laktater.splice(index, 1);
+        setSelectedMeasurement({ ...selectedMeasurement });
+        updateMeasurement(selectedMeasurement);
+    }
+
+    const onRemoveMeasurementClick = (measurement: Measurement, index: number) => {
+        measurements.splice(index, 1);
+        setMeasurements([...measurements]);
+        removeMeasurement(measurement)
     }
 
     return (
-        <header className="App-header">
-            {bruker &&
-                <>
-                    <p>Terskel</p>
-                    <Button variant="primary" onClick={fetchData}>Hent data</Button>
-                    <Button variant="primary" onClick={setData}>Sett data</Button>
-                    <Container>
-                        {malinger.length > 0 && malinger.map(ma => (
-                            <LaktatChart
-                                data={ma.fartDataMalinger}
-                                syncId={ma.id}
-                                xKey="fart"
-                                lineKey="laktat"
-                                xDomain={[11, 15]}
-                                yDomain={[1, 8]}
-                            />
-                        ))}
-                    </Container>
-                    <Container>
-                        {malinger.length > 0 && malinger.map(ma => (
-                            <LaktatChart
-                                data={ma.pulsDataMalinger}
-                                syncId={ma.id + 'puls'}
-                                xKey="puls"
-                                lineKey="laktat"
-                                xDomain={[130, 190]}
-                                yDomain={[1, 8]}
-                            />
-                        ))}
-                    </Container>
-                    <h3>Data</h3>
-                    <DataContainer>
-                        {malinger.length > 0 && malinger.map(ma => (
-                            <>
-                                <h4>{ma.id}</h4>
-                                <HeaderWrapper>
-                                    <h6>Fart</h6>
-                                    <h6>Puls</h6>
-                                    <h6>Laktat</h6>
-                                </HeaderWrapper>
-                                <HeaderWrapper>
-                                    {ma.malinger.map(f => (
-                                        <>
-                                            <input type="number" value={f.fart} />
-                                            <input type="number" value={f.puls} />
-                                            <input type="number" value={f.laktat} />
-                                        </>
-                                    ))}
-
-                                </HeaderWrapper>
-                            </>
-                        ))}
-                    </DataContainer>
-                    <Button variant="primary" onClick={oppdater}>Oppdater</Button>
-
-                </>
-            }
-        </header>
+        <>
+            <Wrapper>
+                <div>
+                    {selectedMeasurement && <LaktatOverviewComponent selectedMeasurement={selectedMeasurement}></LaktatOverviewComponent>}
+                </div>
+                {selectedMeasurement &&
+                    <div>
+                        <MeasurementHeader>
+                            <Button onClick={() => setSelectedMeasurement(undefined)}>Tilbake</Button>
+                            Laktat
+                            {prettifyDate(selectedMeasurement.date)}
+                        </MeasurementHeader>
+                        <Table>
+                            <thead>
+                                <tr>
+                                    {!selectedMeasurement.id && <th>Dato</th>}
+                                    <th>Laktat</th>
+                                    <th>Puls</th>
+                                    <th>Fart</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    {!selectedMeasurement.id &&
+                                        <td>
+                                            <DatePicker
+                                                format={'DD.MM.YYYY'}
+                                                clearIcon={false}
+                                                value={moment(selectedMeasurement.date)}
+                                                placeholder={''}
+                                                onChange={onDateChange}
+                                            />
+                                        </td>
+                                    }
+                                    <td><input name={'laktat'} type={"number"} onChange={onInputChange} value={newLaktat.laktat}></input></td>
+                                    <td><input name={'puls'} type={"number"} onChange={onInputChange} value={newLaktat.puls}></input></td>
+                                    <td><input name={'fart'} type={"number"} onChange={onInputChange} value={newLaktat.fart}></input></td>
+                                    {!selectedMeasurement.id && <td><Button onClick={() => onAddMeasurementClick(selectedMeasurement)}>Add</Button></td>}
+                                    {selectedMeasurement.id && <td><Button onClick={() => onAddLaktatClick(newLaktat)}>Add</Button></td>}
+                                </tr>
+                                {selectedMeasurement.laktater.map((laktat, i) =>
+                                    <tr key={`laktat_row_${i}`}>
+                                        <td>{laktat.laktat}</td>
+                                        <td>{laktat.puls}</td>
+                                        <td>{laktat.fart}</td>
+                                        <td><Button onClick={() => onRemoveLaktatClick(i)}>Delete</Button></td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </Table>
+                    </div>
+                }
+                {!selectedMeasurement &&
+                    <div>
+                        <MeasurementHeader>
+                            Målinger
+                            <Button onClick={onNewMeasurementClick}>Ny måling</Button>
+                        </MeasurementHeader>
+                        <Table>
+                            <thead>
+                                <tr>
+                                    <th>Dato</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {measurements.map((measurement, i) =>
+                                    <tr key={`measurement_row_${i}`} onClick={() => setSelectedMeasurement({ ...measurement })}>
+                                        <td>{prettifyDate(measurement.date)}</td>
+                                        <td><Button onClick={() => onRemoveMeasurementClick(measurement, i)}>Delete</Button></td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </Table>
+                    </div>
+                }
+            </Wrapper>
+        </>
     );
 };
 

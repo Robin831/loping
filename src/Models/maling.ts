@@ -23,7 +23,14 @@ export class Data {
 }
 
 export type Measurement = {
+	id?: string | null;
+	date: Date;
+	laktater: LaktatType[];
+};
+
+export type LaktatType = {
 	fart: number;
-	verdi: number;
+	laktat: number;
 	puls: number;
+	id?: string | null;
 };
