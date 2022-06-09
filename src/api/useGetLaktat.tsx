@@ -13,7 +13,6 @@ export default () => {
 
         const measurements = data.docs.map(doc => {
             const data = doc.data();
-            console.log(data, data.date.toDate())
             const laktater = data.data.map((l: any) => {
                 const laktat: LaktatType = {
                     laktat: l.verdi,

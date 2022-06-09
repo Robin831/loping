@@ -6,10 +6,12 @@ import { ContextProps } from './ContextProps';
 type AppContextType = {
     isSigningIn: boolean;
     user: User | null;
+    selectedMeasurement: Measurement | null;
     measurements: Measurement[];
     setIsSigningIn: (isSigningIn: boolean) => void;
     setUser: (user: User | null) => void;
-    setMeasurements: (measurements: Measurement[]) => void
+    setMeasurements: (measurements: Measurement[]) => void;
+    setSelectedMeasurement: (measurement: Measurement | null) => void;
 };
 
 export const AppContext = React.createContext<AppContextType>(undefined!);
@@ -17,6 +19,7 @@ export const AppContext = React.createContext<AppContextType>(undefined!);
 export const AppProvider = ({ children }: ContextProps) => {
     const [isSigningIn, setIsSigningIn] = useState<boolean>(false);
     const [user, setUser] = useState<User | null>(null);
+    const [selectedMeasurement, setSelectedMeasurement] = useState<Measurement | null>(null);
     const [measurements, setMeasurements] = useState<Measurement[]>([]);
 
     return (
@@ -27,7 +30,9 @@ export const AppProvider = ({ children }: ContextProps) => {
                 user,
                 setUser,
                 measurements,
-                setMeasurements
+                setMeasurements,
+                selectedMeasurement,
+                setSelectedMeasurement
             }}
         >
             {children}
