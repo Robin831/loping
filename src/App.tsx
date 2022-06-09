@@ -1,13 +1,16 @@
 import './App.css';
-import Laktat from './Laktat';
+import { AppProvider } from './context/AppContext';
+import AppRouter from './route/AppRouter';
 
-function App() {
+const App = () => {
   return (
     <div className="App">
-        <Laktat />
+      <AppProvider>
+        <AppRouter></AppRouter>
+      </AppProvider>
     </div>
 
-);
+  );
 }
 
 export default App;
