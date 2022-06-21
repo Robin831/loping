@@ -8,6 +8,8 @@ import { prettifyDate } from "./utils/DateUtils";
 import moment from "moment";
 import LaktatListComponent from "./Components/laktat-list/LaktatList";
 import MeasurementsListComponent from "./Components/measurements-list/MeasurementList";
+import { useResponsiveHandler } from "./hooks/useResponsiveHandler";
+// import LaktatMobile from "./LaktatMobile";
 
 const Laktat: FC = (): ReactElement => {
     const { selectedMeasurement, setSelectedMeasurement } = useAppStore();
@@ -22,7 +24,7 @@ const Laktat: FC = (): ReactElement => {
 
     return (
         <>
-            <Wrapper>
+            {/* <Wrapper>
                 <div>
                     {selectedMeasurement && <LaktatOverviewComponent selectedMeasurement={selectedMeasurement}></LaktatOverviewComponent>}
                 </div>
@@ -44,7 +46,7 @@ const Laktat: FC = (): ReactElement => {
                         <MeasurementsListComponent />
                     </div>
                 }
-            </Wrapper>
+            </Wrapper> */}
         </>
     );
 };

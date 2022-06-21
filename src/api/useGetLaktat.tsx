@@ -30,6 +30,7 @@ export default () => {
             return mesurement;
         });
         setMeasurements([...measurements]);
+        return [...measurements];
     }
 
     const addMeasurement = async (measurement: Measurement) => {

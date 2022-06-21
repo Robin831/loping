@@ -20,7 +20,7 @@ const MeasurementsListComponent: React.FC<Props> = () => {
     }
     return (
         <>
-            <Wrapper>
+            {/* <Wrapper>
                 <Table>
                     <thead>
                         <tr>
@@ -37,7 +37,7 @@ const MeasurementsListComponent: React.FC<Props> = () => {
                         )}
                     </tbody>
                 </Table>
-            </Wrapper>
+            </Wrapper> */}
         </>
     );
 }
