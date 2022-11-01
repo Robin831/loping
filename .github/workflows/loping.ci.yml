@@ -1,6 +1,10 @@
 name: Continous Integration build for Løping
 on: [pull_request]
 
+permissions:
+  contents: write
+  pull-requests: write
+  
 jobs:
   ci:
     name: CI
